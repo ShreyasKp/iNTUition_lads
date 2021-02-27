@@ -1,5 +1,13 @@
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
 import pyrebase
+import requests
+import googlemaps
+import gmaps
+import webbrowser
+import math
+import geopy
+from datetime import datetime
+from geopy.geocoders import Nominatim
 
 app = Flask(__name__)       #Initialze flask constructor
 
@@ -16,11 +24,23 @@ config = {
 firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
 db = firebase.database()
+db1 = firebase.database()
+db2 = firebase.database()
 
 #Initialze person as dictionary
 person = {"is_logged_in": False, "name": "", "email": "", "uid": "", "usertype": "", "add1": "", "add2": "", "pincode": ""}
-restaurant = {"rest_id": "", "weight": "", "no_packets": "", "cuisine": ""}
+rest = {"rest_id": "", "weight": "", "no_packets": "", "cuisine": ""}
 buyer = {"buyer_id": "", "rest_name": "", "cuisine": ""}
+rest_id = ""
+buyer_id = ""
+
+def convertTuple(tup):
+    stri = ''
+    stri = ','.join(tup)
+    return stri
+
+def index_to_go(s):
+    return sorted(range(len(s)), key=lambda k: s[k])[0]
 
 #Login
 @app.route("/")
@@ -37,6 +57,31 @@ def signup():
 def welcome():
     if person["is_logged_in"] == True:
         return render_template("welcome.html", email = person["email"], name = person["name"], usertype = person["usertype"], add1 = person["add1"], add2 = person["add2"], pincode = person["pincode"])
+    else:
+        return redirect(url_for('login'))
+
+@app.route("/restaurant")
+def restaurant():
+    if person["is_logged_in"] == True:
+        global rest_id
+        rest_id = person["uid"]
+        return render_template("rest_add.html")
+    else:
+        return redirect(url_for('login'))
+
+@app.route("/buyer")
+def buyer():
+    if person["is_logged_in"] == True:
+        global buyer_id
+        buyer_id = person["uid"]
+        return render_template("buyer_add.html", email = person["email"], name = person["name"], usertype = person["usertype"], add1 = person["add1"], add2 = person["add2"], pincode = person["pincode"])
+    else:
+        return redirect(url_for('login'))
+
+@app.route("/volunteer")
+def volunteer():
+    if person["is_logged_in"] == True:
+        return render_template("volunteer.html", email = person["email"], name = person["name"], usertype = person["usertype"], add1 = person["add1"], add2 = person["add2"], pincode = person["pincode"])
     else:
         return redirect(url_for('login'))
 
@@ -62,8 +107,13 @@ def result():
             person["add1"] = data.val()[person["uid"]]["add1"]
             person["add2"] = data.val()[person["uid"]]["add2"]
             person["pincode"] = data.val()[person["uid"]]["pincode"]
-            #Redirect to welcome page
-            return redirect(url_for('welcome'))
+            #Redirect to user profile page
+            if person["usertype"] == 'Restaurant':
+                return redirect(url_for('restaurant'))
+            elif person["usertype"] == 'Volunteer':
+                return redirect(url_for('volunteer'))
+            elif person["usertype"] == 'Buyer':
+                return redirect(url_for('buyer'))
         except:
             #If there is any error, redirect back to login
             return redirect(url_for('login'))
@@ -104,7 +154,14 @@ def register():
             data = {"name": name, "email": email, "usertype": usertype, "add1": add1, "add2": add2, "pincode": pincode}
             db.child("users").child(person["uid"]).set(data)
             #Go to welcome page
-            return redirect(url_for('welcome'))
+            #return redirect(url_for('welcome'))
+            #Redirect to user profile page
+            if person["usertype"] == 'Restaurant':
+                return redirect(url_for('restaurant'))
+            elif person["usertype"] == 'Volunteer':
+                return redirect(url_for('volunteer'))
+            elif person["usertype"] == 'Buyer':
+                return redirect(url_for('buyer'))
         except:
             #If there is any error, redirect to register
             return redirect(url_for('register'))
@@ -116,8 +173,8 @@ def register():
             return redirect(url_for('register'))
 
 #If a restaurant logs in, they are redirected to /publish
-@app.route("/publish/<rest_id>", methods = ["POST", "GET"])
-def publish(rest_id):
+@app.route("/publish", methods = ["POST", "GET"])
+def publish():
     if request.method == "POST":        #Only listen to POST
         result = request.form           #Get the data submitted
         weight = result["weight"]
@@ -125,18 +182,21 @@ def publish(rest_id):
         cuisine = result["cuisine"]
         try:
             #Add data to global restaurant
-            global restaurant
-            restaurant["weight"] = weight
-            restaurant["no_packets"] = no_packets
-            restaurant["cuisine"] = cuisine
+            global rest
+            rest["rest_id"] = rest_id
+            rest["weight"] = weight
+            rest["no_packets"] = no_packets
+            rest["cuisine"] = cuisine
             #Append data to the firebase realtime database
             rest_data = {"rest_id": rest_id, "weight": weight, "no_packets": no_packets, "cuisine": cuisine}
-            db.child("restaurant").child(restaurant["rest_id"]).set(rest_data)
+            # rest_data = {"weight": weight, "no_packets": no_packets, "cuisine": cuisine}
+            db1.child("restaurant").child(rest["rest_id"]).set(rest_data)
+            print(rest_data)
             #Go to notification page <TODO: Write Please wait a volunteer is on his way>
             return redirect(url_for('welcome'))
         except:
             #If there is any error, redirect to register
-            return redirect(url_for('publish/<rest_id>'))
+            return redirect(url_for('publish'))
 
     """
     else:
@@ -166,6 +226,34 @@ def buy(buyer_id):
         except:
             #If there is any error, redirect to register
             return redirect(url_for('publish/<rest_id>'))
+
+#If a volunteer logs in, they are redirected to /map
+@app.route("/map", methods = ["GET"])
+def map():
+    if request.method == "GET":        #Only listen to POST
+        # result = request.form           #Get the data submitted
+        # rest_name = result["rest_name"]
+        # cuisine = result["cuisine"]
+        try:
+            restaurants = db1.child("restaurant").get()
+            """
+            person["name"] = restaurants.val()[person["uid"]]["name"]
+            person["usertype"] = data.val()[person["uid"]]["usertype"]
+            person["add1"] = data.val()[person["uid"]]["add1"]
+            person["add2"] = data.val()[person["uid"]]["add2"]
+            person["pincode"] = data.val()[person["uid"]]["pincode"]
+            buyer["rest_name"] = rest_name
+            buyer["cuisine"] = cuisine
+            #Append data to the firebase realtime database
+            buyer_data = {"buyer_id": buyer_id, "rest_name": rest_name, "cuisine": cuisine}
+            db.child("buyer").child(buyer["buyer_id"]).set(buyer_data)
+            #Go to notification page <TODO: Write Please wait a volunteer is on his way>
+            return redirect(url_for('welcome'))
+            """
+            print(restaurants)
+        except:
+            #If there is any error, redirect to register
+            return redirect(url_for('map'))
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=5000, debug=True)
