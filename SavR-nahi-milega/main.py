@@ -52,6 +52,18 @@ def login():
 def signup():
     return render_template("signup.html")
 
+@app.route("/first_location")
+def first_location():
+    return render_template("first_location.html")
+
+@app.route("/second_location")
+def second_location():
+    return render_template("second_location.html")
+
+@app.route("/delivery")
+def delivery():
+    return render_template("delivery.html")
+
 #Welcome page
 @app.route("/welcome")
 def welcome():
