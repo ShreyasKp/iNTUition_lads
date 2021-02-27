@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Welcome</title>
+    <script src="https://www.gstatic.com/firebasejs/ui/4.4.0/firebase-ui-auth.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.4.0/firebase-ui-auth.css" />
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename = 'welcome.css')}}">
+ 	<link rel="stylesheet" type="text/css" href="../static/welcome.css">
+</head>
+<body>
+<div class="main">
+	<h1 class="name">Hi, {{name}}</h1><hr style="width: 30%">
+	<h3 class="usertype">Type of user- {{usertype}}</h3>
+    <h3 class="email">Email- {{email}}</h3>
+</div>
+</body>
+</html>
