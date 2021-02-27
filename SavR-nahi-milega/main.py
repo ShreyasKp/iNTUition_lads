@@ -19,6 +19,8 @@ db = firebase.database()
 
 #Initialze person as dictionary
 person = {"is_logged_in": False, "name": "", "email": "", "uid": "", "usertype": "", "add1": "", "add2": "", "pincode": ""}
+restaurant = {"rest_id": "", "weight": "", "no_packets": "", "cuisine": ""}
+buyer = {"buyer_id": "", "rest_name": "", "cuisine": ""}
 
 #Login
 @app.route("/")
@@ -112,6 +114,58 @@ def register():
             return redirect(url_for('welcome'))
         else:
             return redirect(url_for('register'))
+
+#If a restaurant logs in, they are redirected to /publish
+@app.route("/publish/<rest_id>", methods = ["POST", "GET"])
+def publish(rest_id):
+    if request.method == "POST":        #Only listen to POST
+        result = request.form           #Get the data submitted
+        weight = result["weight"]
+        no_packets = result["no_packets"]
+        cuisine = result["cuisine"]
+        try:
+            #Add data to global restaurant
+            global restaurant
+            restaurant["weight"] = weight
+            restaurant["no_packets"] = no_packets
+            restaurant["cuisine"] = cuisine
+            #Append data to the firebase realtime database
+            rest_data = {"rest_id": rest_id, "weight": weight, "no_packets": no_packets, "cuisine": cuisine}
+            db.child("restaurant").child(restaurant["rest_id"]).set(rest_data)
+            #Go to notification page <TODO: Write Please wait a volunteer is on his way>
+            return redirect(url_for('welcome'))
+        except:
+            #If there is any error, redirect to register
+            return redirect(url_for('publish/<rest_id>'))
+
+    """
+    else:
+        if person["is_logged_in"] == True:
+            return redirect(url_for('welcome'))
+        else:
+            return redirect(url_for('register'))
+    """
+
+#If a buyer logs in, they are redirected to /buy
+@app.route("/buy/<buyer_id>", methods = ["POST", "GET"])
+def buy(buyer_id):
+    if request.method == "POST":        #Only listen to POST
+        result = request.form           #Get the data submitted
+        rest_name = result["rest_name"]
+        cuisine = result["cuisine"]
+        try:
+            #Add data to global restaurant
+            global buyer
+            buyer["rest_name"] = rest_name
+            buyer["cuisine"] = cuisine
+            #Append data to the firebase realtime database
+            buyer_data = {"buyer_id": buyer_id, "rest_name": rest_name, "cuisine": cuisine}
+            db.child("buyer").child(buyer["buyer_id"]).set(buyer_data)
+            #Go to notification page <TODO: Write Please wait a volunteer is on his way>
+            return redirect(url_for('welcome'))
+        except:
+            #If there is any error, redirect to register
+            return redirect(url_for('publish/<rest_id>'))
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=5000, debug=True)
