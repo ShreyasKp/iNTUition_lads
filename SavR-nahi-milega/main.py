@@ -74,7 +74,7 @@ def buyer():
     if person["is_logged_in"] == True:
         global buyer_id
         buyer_id = person["uid"]
-        return render_template("buyer_add.html", email = person["email"], name = person["name"], usertype = person["usertype"], add1 = person["add1"], add2 = person["add2"], pincode = person["pincode"])
+        return render_template("buyer_add.html")
     else:
         return redirect(url_for('login'))
 
@@ -191,7 +191,6 @@ def publish():
             rest_data = {"rest_id": rest_id, "weight": weight, "no_packets": no_packets, "cuisine": cuisine}
             # rest_data = {"weight": weight, "no_packets": no_packets, "cuisine": cuisine}
             db1.child("restaurant").child(rest["rest_id"]).set(rest_data)
-            print(rest_data)
             #Go to notification page <TODO: Write Please wait a volunteer is on his way>
             return redirect(url_for('welcome'))
         except:
@@ -207,8 +206,8 @@ def publish():
     """
 
 #If a buyer logs in, they are redirected to /buy
-@app.route("/buy/<buyer_id>", methods = ["POST", "GET"])
-def buy(buyer_id):
+@app.route("/buy", methods = ["POST", "GET"])
+def buy():
     if request.method == "POST":        #Only listen to POST
         result = request.form           #Get the data submitted
         rest_name = result["rest_name"]
@@ -216,16 +215,18 @@ def buy(buyer_id):
         try:
             #Add data to global restaurant
             global buyer
+            buyer["buyer_id"] = buyer_id
             buyer["rest_name"] = rest_name
             buyer["cuisine"] = cuisine
             #Append data to the firebase realtime database
             buyer_data = {"buyer_id": buyer_id, "rest_name": rest_name, "cuisine": cuisine}
-            db.child("buyer").child(buyer["buyer_id"]).set(buyer_data)
+            db2.child("buyer").child(buyer["buyer_id"]).set(buyer_data)
+            print('buyer_data: ', buyer_data)
             #Go to notification page <TODO: Write Please wait a volunteer is on his way>
             return redirect(url_for('welcome'))
         except:
             #If there is any error, redirect to register
-            return redirect(url_for('publish/<rest_id>'))
+            return redirect(url_for('buy'))
 
 #If a volunteer logs in, they are redirected to /map
 @app.route("/map", methods = ["GET"])
