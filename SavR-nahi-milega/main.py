@@ -31,8 +31,8 @@ db2 = firebase.database()
 person = {"is_logged_in": False, "name": "", "email": "", "uid": "", "usertype": "", "add1": "", "add2": "", "pincode": ""}
 rest = {"rest_id": "", "weight": "", "no_packets": "", "cuisine": ""}
 buyer = {"buyer_id": "", "rest_name": "", "cuisine": ""}
-rest_id = ""
-buyer_id = ""
+rest_id = "onPEAUuSRTeo5LnphUcrcjOU20j1"
+buyer_id = "zb2opGtKYYNBHcExjc5BGCDne4t1"
 
 def convertTuple(tup):
     stri = ''
@@ -210,17 +210,22 @@ def publish():
 def buy():
     if request.method == "POST":        #Only listen to POST
         result = request.form           #Get the data submitted
-        rest_name = result["rest_name"]
+        restname = result["restname"]
         cuisine = result["cuisine"]
+        print('Debug point 1')
+        print(buyer_id)
+        print(restname)
+        print(cuisine)
         try:
             #Add data to global restaurant
-            global buyer
-            buyer["buyer_id"] = buyer_id
-            buyer["rest_name"] = rest_name
-            buyer["cuisine"] = cuisine
+            # global buyer
+            # buyer["buyer_id"] = buyer_id
+            # buyer["restname"] = restname
+            # buyer["cuisine"] = cuisine
+            # print('buyer: ', buyer)
             #Append data to the firebase realtime database
-            buyer_data = {"buyer_id": buyer_id, "rest_name": rest_name, "cuisine": cuisine}
-            db2.child("buyer").child(buyer["buyer_id"]).set(buyer_data)
+            buyer_data = {"buyer_id": buyer_id, "restname": restname, "cuisine": cuisine}
+            db2.child("buyer").child(buyer_id).set(buyer_data)
             print('buyer_data: ', buyer_data)
             #Go to notification page <TODO: Write Please wait a volunteer is on his way>
             return redirect(url_for('welcome'))
