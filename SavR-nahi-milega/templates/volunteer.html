@@ -130,14 +130,15 @@ hr {
 <script>
 function myMap() {
 var mapProp= {
-  center:new google.maps.LatLng(1.311090, 103.826034),
+  center:new google.maps.LatLng(1.28750595, 103.8035434807163),
   zoom:15,
 };
 
 var map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
 
 var marker = new google.maps.Marker({
-  position:new google.maps.LatLng(1.311090, 103.826034),
+  position:new google.maps.LatLng(1.28750595, 103.8035434807163),
+  animation:google.maps.Animation.BOUNCE
 });
 
 marker.setMap(map);
